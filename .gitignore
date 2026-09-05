@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+*.joblib
+*.pkl
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# Environment & IDE
+.env
+.env.local
+.vscode/
+.idea/
+*.log
+
+# Data & Models
+data/*.csv
+!data/.gitkeep
+ml/models/*.joblib
+!ml/models/.gitkeep
