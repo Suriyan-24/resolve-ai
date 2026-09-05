@@ -5,7 +5,7 @@ from app.db.session import get_db
 from app.db.repositories import DisputeRepository, AuditRepository
 from app.db.models import Dispute, RiskScore, Decision, Evidence
 from app.services.agent_service import AIAgentInvestigator, AgentInvestigationResult
-from app.ml.risk_engine import MLRiskEngine
+from ml.risk_engine import MLRiskEngine
 
 router = APIRouter(prefix="/disputes", tags=["Disputes"])
 
