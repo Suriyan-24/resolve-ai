@@ -1,138 +1,232 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import Navigation from '@/components/Navigation';
 
-interface HealthData {
+interface DisputeSummary {
+  id: str;
+  razorpay_dispute_id: str;
+  dispute_amount: number;
   status: string;
-  app_name: string;
-  environment: str;
-  database_connected: boolean;
+  reason_code: string;
+  customer_email: string;
+  payment_method: string;
+  risk_score: number;
+  risk_level: string;
+  recommendation: string;
+  created_at: string;
 }
 
-export default function Home() {
-  const [health, setHealth] = useState<HealthData | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+interface Metrics {
+  total_disputes: number;
+  high_risk_count: number;
+  under_review_count: number;
+  protected_funds_inr: number;
+}
 
-  const checkHealth = async () => {
+export default function CommandCenter() {
+  const [disputes, setDisputes] = useState<DisputeSummary[]>([]);
+  const [metrics, setMetrics] = useState<Metrics | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [filter, setFilter] = useState<string>('ALL');
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+  const fetchData = async () => {
     setLoading(true);
-    setError(null);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const res = await fetch(`${apiUrl}/api/v1/health`);
-      if (!res.ok) {
-        throw new Error(`HTTP Error ${res.status}`);
+      const [dispRes, metricRes] = await Promise.all([
+        fetch(`${API_URL}/api/v1/disputes`),
+        fetch(`${API_URL}/api/v1/disputes/metrics/summary`)
+      ]);
+
+      if (dispRes.ok) {
+        const data = await dispRes.json();
+        setDisputes(data);
       }
-      const data: HealthData = await res.json();
-      setHealth(data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to connect to backend API');
+
+      if (metricRes.ok) {
+        const mData = await metricRes.json();
+        setMetrics(mData);
+      }
+    } catch (e) {
+      console.error('Failed to fetch command center data', e);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    checkHealth();
+    fetchData();
   }, []);
 
+  const filteredDisputes = disputes.filter((d) => {
+    if (filter === 'HIGH_RISK') return d.risk_level === 'HIGH';
+    if (filter === 'REVIEW') return d.status === 'UNDER_REVIEW' || d.status === 'OPEN';
+    if (filter === 'DEFENDED') return d.status === 'DEFENDED';
+    return true;
+  });
+
   return (
-    <div className="min-h-screen flex flex-col justify-between p-8 max-w-6xl mx-auto">
-      {/* Header */}
-      <header className="flex items-center justify-between border-b border-slate-800 pb-6">
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-xl shadow-lg shadow-indigo-500/30">
-            R
-          </div>
+    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+      <Navigation />
+
+      <main className="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-8">
+        {/* Title */}
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-white">ResolveAI</h1>
-            <p className="text-xs text-slate-400">Razorpay Buildathon — AI Risk Manager</p>
+            <h1 className="text-2xl font-bold text-white tracking-tight">Dispute Command Center</h1>
+            <p className="text-xs text-slate-400 mt-1">Real-time AI chargeback triage, risk scoring, and policy enforcement</p>
           </div>
+          <button
+            onClick={fetchData}
+            className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-lg text-xs font-semibold border border-slate-800 transition-colors"
+          >
+            🔄 Refresh Queue
+          </button>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            Phase 1 Bootstrapped
-          </span>
-        </div>
-      </header>
-
-      {/* Main Shell Content */}
-      <main className="my-12 space-y-8">
-        <div className="glass-panel rounded-2xl p-8 shadow-2xl relative overflow-hidden">
-          <div className="absolute -top-24 -right-24 w-72 h-72 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
-
-          <h2 className="text-2xl font-bold text-white mb-2">ResolveAI Application Shell</h2>
-          <p className="text-slate-300 text-sm max-w-2xl leading-relaxed mb-6">
-            The foundation for AI dispute triage, machine learning risk scoring, policy guardrails, and automated chargeback defense is online.
-          </p>
-
-          <div className="border-t border-slate-800 pt-6">
-            <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
-              Backend Connectivity Test
-            </h3>
-
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={checkHealth}
-                disabled={loading}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium text-sm transition-all duration-200 shadow-lg shadow-indigo-600/25 disabled:opacity-50"
-              >
-                {loading ? 'Checking Gateway...' : 'Ping FastAPI Gateway'}
-              </button>
-
-              {health && (
-                <div className="flex items-center space-x-3 text-xs bg-slate-900/80 px-4 py-2 rounded-lg border border-slate-800">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <span className="text-slate-300 font-medium">{health.app_name}</span>
-                  <span className="text-slate-500">|</span>
-                  <span className="text-slate-400">DB: {health.database_connected ? 'Connected' : 'Disconnected'}</span>
-                  <span className="text-slate-500">|</span>
-                  <span className="text-emerald-400 font-semibold uppercase">{health.status}</span>
-                </div>
-              )}
-
-              {error && (
-                <div className="flex items-center space-x-2 text-xs bg-rose-500/10 text-rose-400 px-4 py-2 rounded-lg border border-rose-500/20">
-                  <span>⚠️ Connection Error: {error}</span>
-                </div>
-              )}
+        {/* Metrics Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+          <div className="glass-panel p-5 rounded-xl border border-slate-800/80 shadow-lg">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Disputes Ingested</span>
+            <div className="text-3xl font-extrabold text-white mt-2">
+              {metrics ? metrics.total_disputes : '--'}
             </div>
+            <span className="text-[11px] text-slate-500 mt-1 block">Razorpay Test Mode Ingestion</span>
+          </div>
+
+          <div className="glass-panel p-5 rounded-xl border border-rose-500/20 bg-rose-500/5 shadow-lg">
+            <span className="text-xs font-semibold text-rose-400 uppercase tracking-wider">High Risk Cases</span>
+            <div className="text-3xl font-extrabold text-rose-400 mt-2">
+              {metrics ? metrics.high_risk_count : '--'}
+            </div>
+            <span className="text-[11px] text-rose-300/60 mt-1 block">Risk Score ≥ 70%</span>
+          </div>
+
+          <div className="glass-panel p-5 rounded-xl border border-amber-500/20 bg-amber-500/5 shadow-lg">
+            <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Under Human Review</span>
+            <div className="text-3xl font-extrabold text-amber-400 mt-2">
+              {metrics ? metrics.under_review_count : '--'}
+            </div>
+            <span className="text-[11px] text-amber-300/60 mt-1 block">Escalated by Policy Engine</span>
+          </div>
+
+          <div className="glass-panel p-5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 shadow-lg">
+            <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Protected Funds</span>
+            <div className="text-3xl font-extrabold text-emerald-400 mt-2">
+              ₹{metrics ? metrics.protected_funds_inr.toLocaleString('en-IN') : '--'}
+            </div>
+            <span className="text-[11px] text-emerald-300/60 mt-1 block">Successfully Defended</span>
           </div>
         </div>
 
-        {/* Phase Breakdown Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="glass-panel p-6 rounded-xl">
-            <div className="text-indigo-400 font-mono text-xs mb-2">PHASE 1 (COMPLETE)</div>
-            <h4 className="font-bold text-white text-base mb-1">Architecture & Skeleton</h4>
-            <p className="text-slate-400 text-xs leading-relaxed">
-              FastAPI gateway, SQLite/Postgres connection layer, ML risk engine interface, next.js UI shell, pytest suite.
-            </p>
-          </div>
+        {/* Filter Bar */}
+        <div className="flex items-center space-x-2 border-b border-slate-800 pb-4">
+          {[
+            { id: 'ALL', label: 'All Cases' },
+            { id: 'HIGH_RISK', label: 'High Risk (≥ 70%)' },
+            { id: 'REVIEW', label: 'Under Review' },
+            { id: 'DEFENDED', label: 'Defended' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setFilter(tab.id)}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                filter === tab.id
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                  : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-          <div className="glass-panel p-6 rounded-xl opacity-60">
-            <div className="text-slate-500 font-mono text-xs mb-2">PHASE 2 (NEXT)</div>
-            <h4 className="font-bold text-slate-300 text-base mb-1">Persistence & Schema</h4>
-            <p className="text-slate-500 text-xs leading-relaxed">
-              PostgreSQL relational tables, Alembic migrations, database models, and synthetic seed generator.
-            </p>
-          </div>
+        {/* Disputes Table */}
+        <div className="glass-panel rounded-xl overflow-hidden border border-slate-800 shadow-xl">
+          <table className="w-full text-left text-xs text-slate-300">
+            <thead className="bg-slate-900/90 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
+              <tr>
+                <th className="px-6 py-4">Dispute ID</th>
+                <th className="px-6 py-4">Customer</th>
+                <th className="px-6 py-4">Amount</th>
+                <th className="px-6 py-4">ML Risk Score</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4">AI Recommendation</th>
+                <th className="px-6 py-4 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/60">
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
+                    Loading dispute queue...
+                  </td>
+                </tr>
+              ) : filteredDisputes.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
+                    No disputes match current filter criteria.
+                  </td>
+                </tr>
+              ) : (
+                filteredDisputes.map((d) => {
+                  const riskColor =
+                    d.risk_level === 'HIGH'
+                      ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                      : d.risk_level === 'MEDIUM'
+                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                      : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
 
-          <div className="glass-panel p-6 rounded-xl opacity-60">
-            <div className="text-slate-500 font-mono text-xs mb-2">PHASE 3</div>
-            <h4 className="font-bold text-slate-300 text-base mb-1">ML Risk Engine</h4>
-            <p className="text-slate-500 text-xs leading-relaxed">
-              Synthetic dataset generator, model training pipeline, precision/recall held-out evaluation report.
-            </p>
-          </div>
+                  const statusColor =
+                    d.status === 'DEFENDED'
+                      ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                      : d.status === 'ACCEPTED'
+                      ? 'text-slate-400 bg-slate-800 border-slate-700'
+                      : 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+
+                  return (
+                    <tr key={d.id} className="hover:bg-slate-900/50 transition-colors">
+                      <td className="px-6 py-4 font-mono font-bold text-white">
+                        {d.razorpay_dispute_id}
+                      </td>
+                      <td className="px-6 py-4 text-slate-300">
+                        {d.customer_email}
+                      </td>
+                      <td className="px-6 py-4 font-semibold text-white">
+                        ₹{d.dispute_amount.toLocaleString('en-IN')}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold border ${riskColor}`}>
+                          {(d.risk_score * 100).toFixed(0)}% ({d.risk_level})
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${statusColor}`}>
+                          {d.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 font-bold text-indigo-400">
+                        {d.recommendation}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <Link
+                          href={`/disputes/${d.id}`}
+                          className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium text-xs shadow-sm transition-all"
+                        >
+                          Investigate →
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-800 pt-6 text-center text-xs text-slate-500">
-        ResolveAI Prototype — Designed for Razorpay Buildathon 2026
-      </footer>
     </div>
   );
 }
