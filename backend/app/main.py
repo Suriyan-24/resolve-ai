@@ -3,9 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.logging import logger
 from app.api.v1.health import router as health_router
+from app.api.v1.webhooks import router as webhooks_router
 from app.db.session import Base, engine
 
-# Create tables for dev SQLite engine automatically if needed
+# Create tables for dev engine automatically if needed
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
@@ -27,6 +28,7 @@ app.add_middleware(
 
 # Mount Routers
 app.include_router(health_router, prefix="/api/v1")
+app.include_router(webhooks_router, prefix="/api/v1")
 
 @app.get("/")
 def root():
