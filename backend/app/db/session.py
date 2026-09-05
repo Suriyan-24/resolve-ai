@@ -29,3 +29,8 @@ def check_database_connection() -> bool:
     except Exception as e:
         logger.error(f"Database connection health check failed: {e}")
         return False
+
+def init_db():
+    from app.db import models  # noqa: F401
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database tables initialized successfully.")
