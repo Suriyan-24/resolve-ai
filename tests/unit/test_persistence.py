@@ -1,4 +1,5 @@
 import pytest
+import uuid
 from datetime import datetime, timedelta
 from app.db.session import SessionLocal, init_db
 from app.db.models import Customer, Transaction, Dispute, AuditLog, WebhookEvent
@@ -20,16 +21,17 @@ def db_session():
         session.close()
 
 def test_create_customer_and_transaction(db_session):
+    uid = str(uuid.uuid4())[:8]
     cust_repo = CustomerRepository(db_session)
-    customer = cust_repo.create(email="test.user@example.com", total_orders=5)
+    customer = cust_repo.create(email=f"test.user.{uid}@example.com", total_orders=5)
 
     assert customer.id is not None
-    assert customer.email == "test.user@example.com"
+    assert f"test.user.{uid}" in customer.email
     assert customer.total_orders == 5
 
     tx = Transaction(
         customer_id=customer.id,
-        razorpay_payment_id="pay_test_998877",
+        razorpay_payment_id=f"pay_test_{uid}",
         amount=1500.0,
         currency="INR",
         payment_method="UPI",
@@ -46,12 +48,13 @@ def test_create_customer_and_transaction(db_session):
 
 
 def test_dispute_repository_crud(db_session):
+    uid = str(uuid.uuid4())[:8]
     cust_repo = CustomerRepository(db_session)
-    customer = cust_repo.create(email="dispute.user@example.com")
+    customer = cust_repo.create(email=f"dispute.user.{uid}@example.com")
     
     tx = Transaction(
         customer_id=customer.id,
-        razorpay_payment_id="pay_test_dispute_123",
+        razorpay_payment_id=f"pay_test_dispute_{uid}",
         amount=3500.0,
         currency="INR",
         payment_method="CARD",
@@ -64,7 +67,7 @@ def test_dispute_repository_crud(db_session):
     dispute_repo = DisputeRepository(db_session)
     dispute = dispute_repo.create_dispute(
         transaction_id=tx.id,
-        razorpay_dispute_id="disp_test_123",
+        razorpay_dispute_id=f"disp_test_{uid}",
         dispute_amount=3500.0,
         reason_code="item_damaged",
         respond_by=datetime.utcnow() + timedelta(days=7),
@@ -72,7 +75,7 @@ def test_dispute_repository_crud(db_session):
     )
 
     assert dispute.id is not None
-    assert dispute.razorpay_dispute_id == "disp_test_123"
+    assert dispute.razorpay_dispute_id == f"disp_test_{uid}"
     assert dispute.status == "OPEN"
 
     # Update status
@@ -81,14 +84,15 @@ def test_dispute_repository_crud(db_session):
 
 
 def test_duplicate_webhook_prevention(db_session):
+    uid = str(uuid.uuid4())[:8]
     webhook_repo = WebhookRepository(db_session)
-    event_id = "evt_razorpay_unique_12345"
+    event_id = f"evt_razorpay_unique_{uid}"
 
     # First attempt should succeed
     evt1 = webhook_repo.record_event(
         event_id=event_id,
         event_type="dispute.created",
-        payload={"dispute_id": "disp_test_123"}
+        payload={"dispute_id": f"disp_test_{uid}"}
     )
     assert evt1 is not None
     assert evt1.event_id == event_id
@@ -97,7 +101,7 @@ def test_duplicate_webhook_prevention(db_session):
     evt2 = webhook_repo.record_event(
         event_id=event_id,
         event_type="dispute.created",
-        payload={"dispute_id": "disp_test_123"}
+        payload={"dispute_id": f"disp_test_{uid}"}
     )
     assert evt2 is None
 
@@ -115,3 +119,4 @@ def test_audit_log_immutability(db_session):
     assert entry.actor_type == "AI_AGENT"
     assert entry.action_taken == "EVIDENCE_ASSEMBLED"
     assert entry.timestamp is not None
+
