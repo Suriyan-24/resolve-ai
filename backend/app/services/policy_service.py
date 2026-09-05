@@ -1,5 +1,5 @@
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
@@ -100,6 +100,14 @@ class PolicyEngine:
                 rule_triggered="P6_HUMAN_EXPLICIT_AUTHORIZATION"
             )
 
+        # Rule P7: High Risk Automated Escalation (High Risk >= 0.70 requires human approval)
+        if req.risk_score >= self.HIGH_RISK_THRESHOLD and req.actor_type != ActorType.HUMAN_USER and req.action != ActionType.ESCALATE_FOR_REVIEW:
+            return PolicyEvaluationResult(
+                outcome=PolicyOutcome.REQUIRES_HUMAN_APPROVAL,
+                reason=f"High risk dispute ({req.risk_score:.0%}) requires mandatory human compliance approval.",
+                rule_triggered="P7_HIGH_RISK_HUMAN_REVIEW_REQUIRED"
+            )
+
         # Rule P2: Financial Ceiling Guard for automated actions
         if req.dispute_amount > self.AUTO_EXECUTION_AMOUNT_CEILING:
             return PolicyEvaluationResult(
@@ -197,5 +205,5 @@ class PolicyEngine:
             new_status=new_status,
             reason=eval_result.reason,
             rule_triggered=eval_result.rule_triggered,
-            executed_at=datetime.utcnow().isoformat()
+            executed_at=datetime.now(timezone.utc).isoformat()
         )

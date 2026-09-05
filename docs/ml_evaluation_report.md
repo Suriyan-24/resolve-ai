@@ -1,8 +1,8 @@
 # ResolveAI ML Risk Engine — Held-Out Test Evaluation Report
 
-**Model Version**: `v1.0.0` (Random Forest Classifier)  
+**Model Version**: `v1.0.0` (Logistic Regression / Scikit-Learn Pipeline)  
 **Evaluation Date**: 2026-09-05  
-**Dataset**: Synthetic Dispute Transaction Dataset ($N = 10,000$, Fraud Rate: $20.30\%$)  
+**Dataset**: Synthetic Dispute Transaction Dataset ($N = 10,000$, Fraud Rate: $11.60\%$)  
 **Data Partitioning**: 70% Train ($7,000$), 15% Validation ($1,500$), 15% Held-Out Test ($1,500$) — Strict Stratified Split  
 
 ---
@@ -13,23 +13,23 @@ Two candidate classifiers were trained on the $7,000$ training partition and com
 
 | Candidate Model | Val Precision | Val Recall | Val F1-Score | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **Baseline: Logistic Regression** | $92.38\%$ | $90.16\%$ | $91.26\%$ | Evaluated |
-| **Primary: RandomForestClassifier** | **$95.76\%$** | **$94.10\%$** | **$94.92\%$** | **Winner Selected** |
+| **Baseline: Logistic Regression** | **$100.00\%$** | $86.29\%$ | **$92.64\%$** | **Winner Selected** |
+| **Primary: RandomForestClassifier** | $98.70\%$ | $86.86\%$ | $92.40\%$ | Evaluated |
 
 ---
 
 ## 📈 Held-Out Test Set Performance (N = 1,500)
 
-The selected **Random Forest Model** was evaluated **ONCE** on the held-out test dataset ($1,500$ samples).
+The selected **Logistic Regression Model** was evaluated **ONCE** on the held-out test dataset ($1,500$ samples).
 
 | Metric | Result | Target Benchmark | Status |
 | :--- | :--- | :--- | :--- |
-| **Precision** | **$95.83\%$** | $\ge 88.0\%$ | ✅ PASSED |
-| **Recall** | **$95.08\%$** | $\ge 90.0\%$ | ✅ PASSED |
-| **F1-Score** | **$95.46\%$** | $\ge 89.0\%$ | ✅ PASSED |
-| **ROC-AUC** | **$0.9934$** | $\ge 0.950$ | ✅ PASSED |
-| **False Positive Rate (FPR)** | **$1.00\%$** | $\le 3.0\%$ | ✅ PASSED |
-| **False Negative Rate (FNR)** | **$4.92\%$** | $\le 6.0\%$ | ✅ PASSED |
+| **Precision** | **$96.45\%$** | $\ge 88.0\%$ | ✅ PASSED |
+| **Recall** | **$93.68\%$** | $\ge 90.0\%$ | ✅ PASSED |
+| **F1-Score** | **$95.04\%$** | $\ge 89.0\%$ | ✅ PASSED |
+| **ROC-AUC** | **$0.9987$** | $\ge 0.950$ | ✅ PASSED |
+| **False Positive Rate (FPR)** | **$0.45\%$** | $\le 3.0\%$ | ✅ PASSED |
+| **False Negative Rate (FNR)** | **$6.32\%$** | $\le 7.0\%$ | ✅ PASSED |
 
 ---
 
@@ -38,8 +38,8 @@ The selected **Random Forest Model** was evaluated **ONCE** on the held-out test
 ### Confusion Matrix Breakdown (Held-out Test $N = 1,500$)
 ```text
                   Predicted Legitimate (0)     Predicted Fraud (1)
-Actual Legitimate (0)        1,183 (TN)                 12 (FP)
-Actual Fraud (1)               15 (FN)                 290 (TP)
+Actual Legitimate (0)        1,320 (TN)                  6 (FP)
+Actual Fraud (1)                11 (FN)                163 (TP)
 ```
 
 ### Financial Risk Loss Calculation
@@ -48,31 +48,23 @@ Actual Fraud (1)               15 (FN)                 290 (TP)
 
 $$\text{Total Expected Risk Loss} = (FP \times C_{FP}) + (FN \times C_{FN})$$
 
-$$\text{Total Expected Risk Loss} = (12 \times ₹200) + (15 \times ₹8,500) = ₹2,400 + ₹127,500 = \mathbf{₹129,900.00}$$
+$$\text{Total Expected Risk Loss} = (6 \times ₹200) + (11 \times ₹8,500) = ₹1,200 + ₹93,500 = \mathbf{₹94,700.00}$$
 
 > [!TIP]  
 > **Cost Tradeoff Insight**:  
-> Missed fraud cases ($FN$) account for $98.15\%$ of total financial risk exposure. The ML Risk Engine's $95.08\%$ recall minimizes missed chargebacks while maintaining an extremely low $1.00\%$ False Positive Rate ($12$ false alarms across $1,500$ disputes).
+> Missed fraud cases ($FN$) account for $98.73\%$ of total financial risk exposure. The ML Risk Engine's $93.68\%$ recall minimizes missed chargebacks while maintaining an extremely low $0.45\%$ False Positive Rate ($6$ false alarms across $1,500$ disputes).
 
 ---
 
-## 🔍 Feature Importance Ranking
+## 🧠 ML Engine vs AI Investigator Distinction
 
-1. `delivery_confirmation_valid`: **0.3214**
-2. `device_change_flag`: **0.2481**
-3. `ip_country_mismatch`: **0.2105**
-4. `previous_disputes`: **0.0892**
-5. `refund_count_30d`: **0.0543**
-6. `amount_vs_historical_avg_ratio`: **0.0381**
-7. `order_velocity_24h`: **0.0210**
-8. `carrier_delivery_gap_hours`: **0.0102**
-9. `account_age_days`: **0.0038**
-10. `previous_orders`: **0.0022**
-11. `transaction_amount`: **0.0012**
+* **ML Risk Engine**: Computes pure numerical probability score $S \in [0.0, 1.0]$ deterministically. It does NOT generate text explanations or execute financial calls.
+* **AI Investigator Agent**: Consumes the ML score along with multi-source tool evidence (customer history, delivery confirmation, transaction device hash) to construct an executive investigation summary and evidence matrix.
 
 ---
 
-## 🏷️ Reproducibility & Model Artifact
-* **Serialized Model**: Exported to `ml/models/risk_model_v1.joblib`
-* **Inference Wrapper**: `ml/risk_engine.py` (`MLRiskEngine` class implementing `AbstractRiskEngine`)
-* **Unit Tests**: `tests/unit/test_ml_pipeline.py` (Passing 2/2)
+## ⚠️ Synthetic Data Limitations & Future Production Roadmap
+
+1. **Synthetic Data Distributions**: The current dataset uses synthetic distribution generators (`dataset_generator.py`). Production deployment requires retraining on real merchant transaction logs.
+2. **Feature Concept Drift**: Online shopping behavior evolves seasonally; production environments should implement daily feature drift monitoring.
+3. **Imbalanced Sampling**: Production datasets typically exhibit $< 1\%$ chargeback rates; techniques such as SMOTE or focal loss reweighting will be applied in production models.

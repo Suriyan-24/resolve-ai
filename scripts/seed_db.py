@@ -1,6 +1,6 @@
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 # Ensure backend directory is in pythonpath
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend")))
@@ -51,7 +51,7 @@ def seed_database():
             payment_method="UPI",
             device_fingerprint="fp_device_arun_macbook_9921",
             ip_country="IN",
-            created_at=datetime.utcnow() - timedelta(days=5)
+            created_at=datetime.now(timezone.utc) - timedelta(days=5)
         )
         db.add(tx1)
         db.flush()
@@ -60,7 +60,7 @@ def seed_database():
             transaction_id=tx1.id,
             delivery_status="DELIVERED",
             tracking_number="BLUEDART_987654321",
-            carrier_delivered_at=datetime.utcnow() - timedelta(days=3),
+            carrier_delivered_at=datetime.now(timezone.utc) - timedelta(days=3),
             shipping_address_hash="hash_bengaluru_560001"
         )
         db.add(order1)
@@ -71,8 +71,8 @@ def seed_database():
             status="DEFENDED",
             dispute_amount=2100.0,
             reason_code="merchandise_not_received",
-            respond_by=datetime.utcnow() + timedelta(days=7),
-            created_at=datetime.utcnow() - timedelta(days=1)
+            respond_by=datetime.now(timezone.utc) + timedelta(days=7),
+            created_at=datetime.now(timezone.utc) - timedelta(days=1)
         )
         db.add(disp1)
         db.flush()
@@ -138,7 +138,7 @@ def seed_database():
             payment_method="CARD",
             device_fingerprint="fp_device_unknown_android_77",
             ip_country="IN",
-            created_at=datetime.utcnow() - timedelta(days=2)
+            created_at=datetime.now(timezone.utc) - timedelta(days=2)
         )
         db.add(tx2)
         db.flush()
@@ -147,7 +147,7 @@ def seed_database():
             transaction_id=tx2.id,
             delivery_status="DELIVERED",
             tracking_number="DELHIVERY_11223344",
-            carrier_delivered_at=datetime.utcnow() - timedelta(days=1),
+            carrier_delivered_at=datetime.now(timezone.utc) - timedelta(days=1),
             shipping_address_hash="hash_mumbai_400001"
         )
         db.add(order2)
@@ -158,8 +158,8 @@ def seed_database():
             status="UNDER_REVIEW",
             dispute_amount=8499.0,
             reason_code="unauthorized_transaction",
-            respond_by=datetime.utcnow() + timedelta(days=3),
-            created_at=datetime.utcnow() - timedelta(hours=6)
+            respond_by=datetime.now(timezone.utc) + timedelta(days=3),
+            created_at=datetime.now(timezone.utc) - timedelta(hours=6)
         )
         db.add(disp2)
         db.flush()
@@ -225,7 +225,7 @@ def seed_database():
             payment_method="CARD",
             device_fingerprint="fp_vpn_proxy_9901",
             ip_country="US",
-            created_at=datetime.utcnow() - timedelta(days=1)
+            created_at=datetime.now(timezone.utc) - timedelta(days=1)
         )
         db.add(tx3)
         db.flush()
@@ -234,7 +234,7 @@ def seed_database():
             transaction_id=tx3.id,
             delivery_status="DELIVERED",
             tracking_number="ECOM_77665544",
-            carrier_delivered_at=datetime.utcnow() - timedelta(hours=12),
+            carrier_delivered_at=datetime.now(timezone.utc) - timedelta(hours=12),
             shipping_address_hash="hash_delhi_110001"
         )
         db.add(order3)
@@ -245,8 +245,8 @@ def seed_database():
             status="OPEN",
             dispute_amount=15000.0,
             reason_code="fraudulent_claim",
-            respond_by=datetime.utcnow() + timedelta(days=5),
-            created_at=datetime.utcnow() - timedelta(hours=2)
+            respond_by=datetime.now(timezone.utc) + timedelta(days=5),
+            created_at=datetime.now(timezone.utc) - timedelta(hours=2)
         )
         db.add(disp3)
         db.flush()

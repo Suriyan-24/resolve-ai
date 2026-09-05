@@ -1,6 +1,7 @@
 import os
 import joblib
 import numpy as np
+import pandas as pd
 from typing import Dict, Any
 from ml.interfaces import AbstractRiskEngine, RiskScoreResult
 from app.core.logging import logger
@@ -65,7 +66,8 @@ class MLRiskEngine(AbstractRiskEngine):
         vector = self._extract_feature_vector(features)
 
         if self.model is not None:
-            probs = self.model.predict_proba(vector)[0]
+            df_vector = pd.DataFrame(vector, columns=self.feature_columns)
+            probs = self.model.predict_proba(df_vector)[0]
             risk_score = float(probs[1])
         else:
             # Fallback heuristic calculation

@@ -19,6 +19,7 @@ frontend/build/
 # Environment & IDE
 .env
 .env.local
+*.db
 .vscode/
 .idea/
 *.log

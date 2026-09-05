@@ -1,6 +1,6 @@
 import pytest
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.db.session import SessionLocal, init_db
 from app.db.models import Customer, Transaction, Dispute, AuditLog, WebhookEvent
 from app.db.repositories import (
@@ -70,7 +70,7 @@ def test_dispute_repository_crud(db_session):
         razorpay_dispute_id=f"disp_test_{uid}",
         dispute_amount=3500.0,
         reason_code="item_damaged",
-        respond_by=datetime.utcnow() + timedelta(days=7),
+        respond_by=datetime.now(timezone.utc) + timedelta(days=7),
         status="OPEN"
     )
 

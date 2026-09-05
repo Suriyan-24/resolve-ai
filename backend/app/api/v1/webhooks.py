@@ -7,7 +7,7 @@ from app.db.repositories import WebhookRepository, DisputeRepository, CustomerRe
 from app.services.razorpay_adapter import verify_razorpay_webhook_signature
 from app.services.agent_service import AIAgentInvestigator
 from app.db.models import Transaction, Dispute
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 router = APIRouter(prefix="/webhooks", tags=["Webhooks"])
 
@@ -88,7 +88,7 @@ async def handle_razorpay_webhook(
                 razorpay_dispute_id=razorpay_dispute_id,
                 dispute_amount=dispute_amount,
                 reason_code=reason_code,
-                respond_by=datetime.utcnow() + timedelta(days=7),
+                respond_by=datetime.now(timezone.utc) + timedelta(days=7),
                 status="OPEN"
             )
 

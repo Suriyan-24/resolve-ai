@@ -1,6 +1,6 @@
 import pytest
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.db.session import SessionLocal, init_db
 from app.db.repositories import CustomerRepository, DisputeRepository
 from app.db.models import Transaction, Dispute
@@ -44,7 +44,7 @@ def create_test_dispute(db_session, amount: float = 2100.0, status: str = "OPEN"
         razorpay_dispute_id=f"disp_policy_{uid}",
         dispute_amount=amount,
         reason_code="merchandise_not_received",
-        respond_by=datetime.utcnow() + timedelta(days=7),
+        respond_by=datetime.now(timezone.utc) + timedelta(days=7),
         status=status
     )
     return dispute

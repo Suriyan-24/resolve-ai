@@ -5,8 +5,8 @@ import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 
 interface DisputeSummary {
-  id: str;
-  razorpay_dispute_id: str;
+  id: string;
+  razorpay_dispute_id: string;
   dispute_amount: number;
   status: string;
   reason_code: string;

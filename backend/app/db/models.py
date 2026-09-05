@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import (
     Column, String, Float, Boolean, DateTime, ForeignKey, 
     Text, JSON, Numeric, Index, UniqueConstraint
@@ -10,12 +10,15 @@ from app.db.session import Base
 def generate_uuid():
     return str(uuid.uuid4())
 
+def utc_now():
+    return datetime.now(timezone.utc)
+
 class Customer(Base):
     __tablename__ = "customers"
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
     email = Column(String(255), nullable=False, index=True)
-    account_created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    account_created_at = Column(DateTime, default=utc_now, nullable=False)
     total_orders = Column(Numeric(10, 0), default=0)
     historical_disputes = Column(Numeric(10, 0), default=0)
 
@@ -36,7 +39,7 @@ class Transaction(Base):
     payment_method = Column(String(50), nullable=False)
     device_fingerprint = Column(String(100), nullable=False)
     ip_country = Column(String(10), default="IN", nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False, index=True)
 
     customer = relationship("Customer", back_populates="transactions")
     order = relationship("Order", back_populates="transaction", uselist=False, cascade="all, delete-orphan")
@@ -72,7 +75,7 @@ class Dispute(Base):
     dispute_amount = Column(Float, nullable=False)
     reason_code = Column(String(100), nullable=False)  # merchandise_not_received, unauthorized, item_damaged
     respond_by = Column(DateTime, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False, index=True)
 
     transaction = relationship("Transaction", back_populates="disputes")
     risk_scores = relationship("RiskScore", back_populates="dispute", cascade="all, delete-orphan")
@@ -93,7 +96,7 @@ class RiskScore(Base):
     risk_level = Column(String(20), nullable=False)  # LOW, MEDIUM, HIGH
     feature_contributions = Column(JSON, default=dict)
     model_version = Column(String(50), default="v1.0.0", nullable=False)
-    calculated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    calculated_at = Column(DateTime, default=utc_now, nullable=False)
 
     dispute = relationship("Dispute", back_populates="risk_scores")
 
@@ -106,7 +109,7 @@ class Evidence(Base):
     evidence_type = Column(String(50), nullable=False)  # delivery_confirmation, ip_match, device_fingerprint, past_history
     evidence_metadata = Column(JSON, default=dict)
     verified = Column(Boolean, default=True, nullable=False)
-    assembled_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    assembled_at = Column(DateTime, default=utc_now, nullable=False)
 
     dispute = relationship("Dispute", back_populates="evidence")
 
@@ -122,7 +125,7 @@ class Decision(Base):
     supporting_evidence = Column(JSON, default=list)
     contradicting_evidence = Column(JSON, default=list)
     human_approval_required = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
 
     dispute = relationship("Dispute", back_populates="decisions")
 
@@ -136,7 +139,7 @@ class AuditLog(Base):
     actor_id = Column(String(100), nullable=False)
     action_taken = Column(String(100), nullable=False, index=True)
     payload = Column(JSON, default=dict)
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    timestamp = Column(DateTime, default=utc_now, nullable=False, index=True)
 
     dispute = relationship("Dispute", back_populates="audit_logs")
 
@@ -149,4 +152,4 @@ class WebhookEvent(Base):
     event_type = Column(String(100), nullable=False)
     payload = Column(JSON, default=dict)
     processed = Column(Boolean, default=False, nullable=False, index=True)
-    received_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    received_at = Column(DateTime, default=utc_now, nullable=False)
