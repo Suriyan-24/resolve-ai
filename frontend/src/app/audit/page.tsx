@@ -17,12 +17,10 @@ export default function AuditTrailPage() {
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
   const fetchAuditLogs = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/v1/audit`);
+      const res = await fetch(`/api/v1/audit`);
       if (res.ok) {
         const data = await res.json();
         setLogs(data);
