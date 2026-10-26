@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     BACKEND_PORT: int = 8000
     SECRET_KEY: str = "dev_secret_key_change_in_production_123456789"
     
-    DATABASE_URL: str = "sqlite:///./resolve_ai_dev.db"
+    # Vercel serverless filesystems are read-only except /tmp; configure DATABASE_URL to a managed DB for persistence.
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:////tmp/resolve_ai_dev.db" if os.getenv("VERCEL") else "sqlite:///./resolve_ai_dev.db")
     
     RAZORPAY_KEY_ID: str = "rzp_test_mock12345678"
     RAZORPAY_KEY_SECRET: str = "mock_secret_key_12345678"
