@@ -24,12 +24,10 @@ export default function AgentTraceVisualizer() {
   const [traces, setTraces] = useState<ToolTrace[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
   useEffect(() => {
     const fetchDisputes = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/v1/disputes`);
+        const res = await fetch(`/api/v1/disputes`);
         if (res.ok) {
           const data = await res.json();
           setDisputes(data);
@@ -48,7 +46,7 @@ export default function AgentTraceVisualizer() {
     if (!id) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/v1/disputes/${id}/trace`);
+      const res = await fetch(`/api/v1/disputes/${id}/trace`);
       if (res.ok) {
         const data = await res.json();
         setTraces(data.tool_traces || []);
