@@ -1,8 +1,6 @@
 import os
-import joblib
-import numpy as np
-import pandas as pd
 from typing import Dict, Any
+
 from ml.interfaces import AbstractRiskEngine, RiskScoreResult
 from app.core.logging import logger
 
@@ -20,11 +18,11 @@ FEATURE_COLUMNS = [
     "delivery_confirmation_valid"
 ]
 
+
 class MLRiskEngine(AbstractRiskEngine):
     def __init__(self, model_path: str = None):
         if model_path is None:
             model_path = os.path.join(os.path.dirname(__file__), "models", "risk_model_v1.joblib")
-        
         self.model_path = model_path
         self.model = None
         self.feature_columns = FEATURE_COLUMNS
@@ -32,45 +30,49 @@ class MLRiskEngine(AbstractRiskEngine):
         self._load_model()
 
     def _load_model(self):
-        if os.path.exists(self.model_path):
-            try:
-                payload = joblib.load(self.model_path)
-                self.model = payload["model"]
-                self.feature_columns = payload.get("feature_columns", FEATURE_COLUMNS)
-                self.model_version = payload.get("model_version", "v1.0.0")
-                logger.info(f"Loaded trained ML Risk Engine from {self.model_path}")
-            except Exception as e:
-                logger.warning(f"Failed to load joblib model at {self.model_path}, using fallback deterministic model: {e}")
-                self.model = None
-        else:
-            logger.warning(f"No trained model found at {self.model_path}. Using fallback heuristic risk calculation.")
+        if not os.path.exists(self.model_path):
+            logger.warning("No trained model found. Using fallback deterministic risk calculation.")
+            return
+        try:
+            import joblib
+            payload = joblib.load(self.model_path)
+            self.model = payload["model"]
+            self.feature_columns = payload.get("feature_columns", FEATURE_COLUMNS)
+            self.model_version = payload.get("model_version", "v1.0.0")
+            logger.info("Loaded trained ML Risk Engine from %s", self.model_path)
+        except Exception as exc:
+            logger.warning("Could not load trained model; using fallback risk calculation: %s", exc)
             self.model = None
 
-    def _extract_feature_vector(self, features: Dict[str, Any]) -> np.ndarray:
-        vector = [
+    def _extract_feature_vector(self, features: Dict[str, Any]):
+        return [
             float(features.get("transaction_amount", 1000.0)),
             float(features.get("account_age_days", 30)),
             float(features.get("previous_orders", 1)),
             float(features.get("previous_disputes", 0)),
             float(features.get("refund_count_30d", 0)),
             float(features.get("carrier_delivery_gap_hours", 48.0)),
-            float(1.0 if features.get("device_change_flag", False) else 0.0),
-            float(1.0 if features.get("ip_country_mismatch", False) else 0.0),
+            float(bool(features.get("device_change_flag", False))),
+            float(bool(features.get("ip_country_mismatch", False))),
             float(features.get("order_velocity_24h", 1)),
             float(features.get("amount_vs_historical_avg_ratio", 1.0)),
-            float(1.0 if features.get("delivery_confirmation_valid", True) else 0.0)
+            float(bool(features.get("delivery_confirmation_valid", True)))
         ]
-        return np.array(vector).reshape(1, -1)
 
     def predict_risk(self, features: Dict[str, Any]) -> RiskScoreResult:
         vector = self._extract_feature_vector(features)
+        risk_score = None
 
         if self.model is not None:
-            df_vector = pd.DataFrame(vector, columns=self.feature_columns)
-            probs = self.model.predict_proba(df_vector)[0]
-            risk_score = float(probs[1])
-        else:
-            # Fallback heuristic calculation
+            try:
+                import pandas as pd
+                df_vector = pd.DataFrame([vector], columns=self.feature_columns)
+                probs = self.model.predict_proba(df_vector)[0]
+                risk_score = float(probs[1])
+            except Exception as exc:
+                logger.warning("Trained model prediction failed; using fallback: %s", exc)
+
+        if risk_score is None:
             score = 0.20
             if features.get("device_change_flag"):
                 score += 0.35
@@ -83,7 +85,6 @@ class MLRiskEngine(AbstractRiskEngine):
             risk_score = min(0.99, max(0.01, score))
 
         risk_score = round(risk_score, 4)
-
         if risk_score >= 0.70:
             risk_level = "HIGH"
         elif risk_score >= 0.35:
@@ -91,7 +92,6 @@ class MLRiskEngine(AbstractRiskEngine):
         else:
             risk_level = "LOW"
 
-        # Feature contributions calculation
         feature_contributions = {
             "device_change_flag": 0.40 if features.get("device_change_flag") else 0.0,
             "ip_country_mismatch": 0.35 if features.get("ip_country_mismatch") else 0.0,
@@ -99,7 +99,6 @@ class MLRiskEngine(AbstractRiskEngine):
             "previous_disputes": round(min(0.30, features.get("previous_disputes", 0) * 0.10), 2),
             "amount_vs_avg_ratio": round(min(0.25, features.get("amount_vs_historical_avg_ratio", 1.0) * 0.05), 2)
         }
-
         return RiskScoreResult(
             risk_score=risk_score,
             risk_level=risk_level,
