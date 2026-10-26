@@ -31,14 +31,12 @@ export default function CommandCenter() {
   const [loading, setLoading] = useState<boolean>(true);
   const [filter, setFilter] = useState<string>('ALL');
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
   const fetchData = async () => {
     setLoading(true);
     try {
       const [dispRes, metricRes] = await Promise.all([
-        fetch(`${API_URL}/api/v1/disputes`),
-        fetch(`${API_URL}/api/v1/disputes/metrics/summary`)
+        fetch(`/api/v1/disputes`),
+        fetch(`/api/v1/disputes/metrics/summary`)
       ]);
 
       if (dispRes.ok) {
