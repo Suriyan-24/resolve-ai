@@ -53,12 +53,10 @@ export default function DisputeHeroScreen() {
   const [actionOutput, setActionOutput] = useState<any | null>(null);
   const [actionExecuting, setActionExecuting] = useState<boolean>(false);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
   const fetchDetail = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/v1/disputes/${disputeId}`);
+      const res = await fetch(`/api/v1/disputes/${disputeId}`);
       if (res.ok) {
         const data = await res.json();
         setDispute(data);
@@ -93,7 +91,7 @@ export default function DisputeHeroScreen() {
         supporting_evidence: dispute.decision.supporting_evidence
       };
 
-      const res = await fetch(`${API_URL}/api/v1/actions/execute`, {
+      const res = await fetch(`/api/v1/actions/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
